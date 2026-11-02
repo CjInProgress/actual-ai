@@ -120,6 +120,8 @@ Available features:
 - `dryRun` - Run in dry run mode (enabled by default)
 - `rerunMissedTransactions` - Re-process transactions previously marked as unclassified
 - `disableRateLimiter` - Disable Rate Limiter
+- `suggestOnly` - Write guesses into notes only, never set a category (see below)
+- `learnFromHistory` - Show the model how earlier transactions from the same payee were categorized (see below)
 
 ## Scheduling
 
@@ -250,3 +252,23 @@ Add `suggestOnly` to `FEATURES` to review every guess before it counts. In this 
 - `SUGGESTED_TAG` (default `#ai-suggest`) must not share a prefix with `GUESSED_TAG` or `NOT_GUESSED_TAG`.
 
 It combines with `dryRun`, which then only logs the suggestions.
+
+## Learn From History
+
+Add `learnFromHistory` to `FEATURES` and each prompt lists how you categorized earlier transactions
+from the same payee (the top three categories with counts), matched by payee, or else by the bank
+description with store numbers and dates stripped (`TST* DOS EQUIS #123 04/12` → `dos equis`).
+Only categories a person set count: a transaction categorized by actual-ai itself (`GUESSED_TAG`) is
+left out, so the model never learns from its own unreviewed answers. Approved suggestions and misses
+you categorized by hand do count. Custom `PROMPT_TEMPLATE`s get the list as `history`
+(`categoryId`, `categoryName`, `count`).
+
+## When the Model Is Not Answering
+
+With a self-hosted model (an `OPENAI_BASE_URL` other than OpenAI's, or Ollama), each run first asks
+the server for its model list (`/models`, or `/tags` for Ollama). If it does not answer within 15 s,
+answers with an error, or does not list the configured model, the run is skipped before the budget
+is opened. If the model stops answering during a run (connection refused or timed out, DNS failure,
+HTTP 5xx or 404), the run stops there. In both cases no transaction is touched, so they are tried
+again next run, instead of each being tagged `#actual-ai-miss` and never retried. An answer that was
+merely unusable, or an HTTP 400 for one prompt, is still tagged as a miss.

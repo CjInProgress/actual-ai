@@ -59,6 +59,13 @@ class TagService {
       .trim();
   }
 
+  // The default guessed tag "#actual-ai" is a prefix of "#actual-ai-miss", so it only counts
+  // when no letter, digit or hyphen follows it.
+  public isGuessed(notes: string): boolean {
+    const escaped = this.guessedTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`${escaped}(?![\\w-])`).test(notes) || notes.includes(LEGACY_NOTES_GUESSED);
+  }
+
   public isNotGuessed(notes: string): boolean {
     return notes.includes(this.notGuessedTag);
   }

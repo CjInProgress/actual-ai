@@ -7,6 +7,7 @@ import {
   APICategoryEntity, APICategoryGroupEntity,
 } from '../types';
 import TransactionProcessor from './transaction-processor';
+import type PayeeHistory from './payee-history';
 
 class BatchTransactionProcessor {
   private readonly transactionProcessor: TransactionProcessor;
@@ -34,6 +35,7 @@ class BatchTransactionProcessor {
         groupId?: string;
         transactions: TransactionEntity[];
       }>,
+    payeeHistory?: PayeeHistory,
   ): Promise<void> {
     for (
       let batchStart = 0;
@@ -59,6 +61,7 @@ class BatchTransactionProcessor {
           rules,
           categories,
           suggestedCategories,
+          payeeHistory,
         );
       }, Promise.resolve());
 

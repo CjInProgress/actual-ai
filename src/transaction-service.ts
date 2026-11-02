@@ -9,6 +9,8 @@ import { isFeatureEnabled } from './config';
 import CategorySuggester from './transaction/category-suggester';
 import BatchTransactionProcessor from './transaction/batch-transaction-processor';
 import TransactionFilterer from './transaction/transaction-filterer';
+import PayeeHistory from './transaction/payee-history';
+import TagService from './transaction/tag-service';
 
 class TransactionService implements TransactionServiceI {
   private readonly actualApiService: ActualApiServiceI;
@@ -21,18 +23,22 @@ class TransactionService implements TransactionServiceI {
 
   private readonly isDryRun: boolean;
 
+  private readonly tagService?: TagService;
+
   constructor(
     actualApiClient: ActualApiServiceI,
     categorySuggester: CategorySuggester,
     transactionProcessor: BatchTransactionProcessor,
     transactionFilterer: TransactionFilterer,
     isDryRun: boolean,
+    tagService?: TagService,
   ) {
     this.actualApiService = actualApiClient;
     this.categorySuggester = categorySuggester;
     this.transactionProcessor = transactionProcessor;
     this.transactionFilterer = transactionFilterer;
     this.isDryRun = isDryRun;
+    this.tagService = tagService;
   }
 
   async processTransactions(): Promise<void> {
@@ -63,6 +69,12 @@ class TransactionService implements TransactionServiceI {
       return;
     }
 
+    let payeeHistory: PayeeHistory | undefined;
+    if (isFeatureEnabled('learnFromHistory') && this.tagService) {
+      payeeHistory = new PayeeHistory(transactions, categories, this.tagService);
+      console.log(`Learn from history: ${payeeHistory.size} categorized transactions from ${payeeHistory.payeeCount} payees`);
+    }
+
     // Track suggested new categories
     const suggestedCategories = new Map<string, {
       name: string;
@@ -79,6 +91,7 @@ class TransactionService implements TransactionServiceI {
       rules,
       categories,
       suggestedCategories,
+      payeeHistory,
     );
 
     // Create new categories if not in dry run mode

@@ -58,6 +58,7 @@ import BatchTransactionProcessor from './transaction/batch-transaction-processor
 import TransactionProcessor from './transaction/transaction-processor';
 import TransactionFilterer from './transaction/transaction-filterer';
 import RateLimiter from './utils/rate-limiter';
+import { ModelHealthCheck } from './utils/model-reachability';
 
 // Create tool service if API key is available and tools are enabled
 export function createToolService(): ToolService | undefined {
@@ -170,11 +171,20 @@ const transactionService = new TransactionService(
   batchTransactionProcessor,
   transactionFilterer,
   isDryRun,
+  tagService,
+);
+
+const modelHealthCheck = new ModelHealthCheck(
+  llmProvider,
+  llmProvider === 'ollama' ? ollamaBaseURL : openaiBaseURL,
+  llmProvider === 'ollama' ? ollamaModel : openaiModel,
+  llmProvider === 'ollama' ? '' : openaiApiKey,
 );
 
 const actualAi = new ActualAiService(
   transactionService,
   actualApiService,
+  modelHealthCheck,
 );
 
 export default actualAi;

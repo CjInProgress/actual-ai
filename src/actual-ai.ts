@@ -4,22 +4,35 @@ import {
 import suppressConsoleLogsAsync from './utils';
 import { formatError } from './utils/error-utils';
 import { isFeatureEnabled } from './config';
+import ModelUnavailableException from './exceptions/model-unavailable-exception';
+import type { ModelHealthCheck } from './utils/model-reachability';
 
 class ActualAiService implements ActualAiServiceI {
   private readonly transactionService: TransactionServiceI;
 
   private readonly actualApiService: ActualApiServiceI;
 
+  private readonly modelHealthCheck?: ModelHealthCheck;
+
   constructor(
     transactionService: TransactionServiceI,
     actualApiService: ActualApiServiceI,
+    modelHealthCheck?: ModelHealthCheck,
   ) {
     this.transactionService = transactionService;
     this.actualApiService = actualApiService;
+    this.modelHealthCheck = modelHealthCheck;
   }
 
   public async classify() {
     console.log('Starting classification process');
+    // Before opening the budget: a model server that is off (a desktop asleep) skips the run
+    // and leaves every transaction as it was, to be tried next run.
+    const unavailable = await this.modelHealthCheck?.check();
+    if (unavailable) {
+      console.warn(`Model unavailable, skipping this run; no transaction was touched: ${unavailable}`);
+      return;
+    }
     let isBudgetOpen = false;
     try {
       await this.actualApiService.initializeApi();
@@ -39,7 +52,12 @@ class ActualAiService implements ActualAiServiceI {
       try {
         await this.transactionService.processTransactions();
       } catch (error) {
-        if (this.isRateLimitError(error)) {
+        if (error instanceof ModelUnavailableException) {
+          console.warn(
+            'Model stopped answering, stopping this run; the remaining transactions were not touched:',
+            formatError(error.cause ?? error),
+          );
+        } else if (this.isRateLimitError(error)) {
           console.error('Rate limit reached during transaction processing. Consider:');
           console.error('1. Adjusting rate limits in provider-limits.ts');
           console.error('2. Switching to a provider with higher limits');

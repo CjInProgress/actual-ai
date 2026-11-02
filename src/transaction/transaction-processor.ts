@@ -9,6 +9,9 @@ import {
   PromptGeneratorI,
 } from '../types';
 import TagService from './tag-service';
+import ModelUnavailableException from '../exceptions/model-unavailable-exception';
+import { isModelUnreachable } from '../utils/model-reachability';
+import type PayeeHistory from './payee-history';
 
 class TransactionProcessor {
   private readonly actualApiService: ActualApiServiceI;
@@ -48,6 +51,7 @@ class TransactionProcessor {
         groupId?: string;
         transactions: TransactionEntity[];
       }>,
+    payeeHistory?: PayeeHistory,
   ): Promise<void> {
     try {
       const prompt = this.promptGenerator.generate(
@@ -55,9 +59,21 @@ class TransactionProcessor {
         transaction,
         payees,
         rules,
+        payeeHistory?.lookup(transaction),
       );
 
-      const response = await this.llmService.ask(prompt);
+      let response;
+      try {
+        response = await this.llmService.ask(prompt);
+      } catch (error) {
+        if (isModelUnreachable(error)) {
+          throw new ModelUnavailableException(
+            `The model did not answer for transaction ${transaction.id}`,
+            { cause: error },
+          );
+        }
+        throw error;
+      }
 
       const strategy = this.processingStrategies.find((s) => s.isSatisfiedBy(response));
       if (strategy) {
@@ -71,6 +87,9 @@ class TransactionProcessor {
         this.tagService.addNotGuessedTag(transaction.notes ?? ''),
       );
     } catch (error) {
+      if (error instanceof ModelUnavailableException) {
+        throw error;
+      }
       console.error(`Error processing transaction ${transaction.id}:`, error);
       await this.actualApiService.updateTransactionNotes(
         transaction.id,

@@ -110,7 +110,14 @@ export interface PromptGeneratorI {
     transaction: TransactionEntity,
     payees: APIPayeeEntity[],
     rules: RuleEntity[],
+    history?: PayeeHistoryEntry[],
   ): string;
+}
+
+export interface PayeeHistoryEntry {
+  categoryId: string;
+  categoryName: string;
+  count: number;
 }
 
 export interface SearchResult {

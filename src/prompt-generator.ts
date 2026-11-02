@@ -2,6 +2,7 @@ import { APIPayeeEntity, APICategoryGroupEntity } from '@actual-app/core/src/ser
 import { RuleEntity, TransactionEntity } from '@actual-app/core/src/types/models';
 import handlebars from './handlebars-helpers';
 import {
+  PayeeHistoryEntry,
   PromptGeneratorI,
 } from './types';
 import PromptTemplateException from './exceptions/prompt-template-exception';
@@ -22,6 +23,7 @@ class PromptGenerator implements PromptGeneratorI {
     transaction: TransactionEntity,
     payees: APIPayeeEntity[],
     rules: RuleEntity[],
+    history: PayeeHistoryEntry[] = [],
   ): string {
     let template;
     try {
@@ -59,6 +61,7 @@ class PromptGenerator implements PromptGeneratorI {
         cleared: transaction.cleared,
         reconciled: transaction.reconciled,
         hasWebSearchTool: webSearchEnabled,
+        history,
       });
     } catch {
       console.error('Error generating prompt. Check syntax of your template.');

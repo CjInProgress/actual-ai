@@ -15,6 +15,13 @@ Transaction details:
 * Date: {{date}}
 {{/if}}
 
+{{#if history.length}}
+How I categorized earlier transactions from this payee (choose the same category unless this transaction is clearly different):
+{{#each history}}
+* {{categoryName}} (ID: "{{categoryId}}"): {{count}} {{#if (eq count 1)}}time{{^}}times{{/if}}
+{{/each}}
+
+{{/if}}
 Existing categories by group:
 {{#each categoryGroups}}
 GROUP: {{name}} (ID: "{{id}}")

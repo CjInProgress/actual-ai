@@ -115,6 +115,12 @@ function registerStandardFeatures() {
     description: 'Write the guessed category into the notes only; never set a category or create one',
   };
 
+  features.learnFromHistory = {
+    enabled: enabledFeatures.includes('learnFromHistory'),
+    defaultValue: false,
+    description: 'Show the model how earlier transactions from the same payee were categorized',
+  };
+
   features.rerunMissedTransactions = {
     enabled: enabledFeatures.includes('rerunMissedTransactions'),
     defaultValue: false,
