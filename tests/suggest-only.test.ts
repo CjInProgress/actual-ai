@@ -36,7 +36,7 @@ describe('suggestOnly', () => {
       [
         new RuleMatchStrategy(suggestOnlyApiService, tagService),
         new ExistingCategoryStrategy(suggestOnlyApiService, tagService),
-        new NewCategoryStrategy(),
+        new NewCategoryStrategy(suggestOnlyApiService, tagService),
       ],
     );
     transactionService = new TransactionService(
@@ -120,6 +120,25 @@ describe('suggestOnly', () => {
     const [transaction] = await inMemoryApiService.getTransactions();
     expect(transaction.category).toBeFalsy();
     expect(transaction.notes).toBe('#actual-ai-miss');
+  });
+
+  it('marks a new-category answer as missed instead of asking again every run', async () => {
+    inMemoryApiService.setTransactions([
+      GivenActualData.createTransaction('1', -3300, 'POS 88213 XJ7 LLC'),
+    ]);
+    mockedLlmService.setUnifiedResponse({
+      type: 'new',
+      newCategory: { name: 'Shopping', groupName: 'Shopping', groupIsNew: true },
+    });
+    const ask = jest.spyOn(mockedLlmService, 'ask');
+
+    await transactionService.processTransactions();
+    await transactionService.processTransactions();
+
+    const [transaction] = await inMemoryApiService.getTransactions();
+    expect(transaction.category).toBeFalsy();
+    expect(transaction.notes).toBe('#actual-ai-miss');
+    expect(ask).toHaveBeenCalledTimes(1);
   });
 
   it('refuses to create or change categories', async () => {

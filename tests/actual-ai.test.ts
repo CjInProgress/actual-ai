@@ -68,7 +68,11 @@ describe('ActualAiService', () => {
       mockedLlmService,
       mockedPromptGenerator,
       tagService,
-      [ruleMatchStrategy, existingCategoryStrategy, new NewCategoryStrategy()],
+      [
+        ruleMatchStrategy,
+        existingCategoryStrategy,
+        new NewCategoryStrategy(inMemoryApiService, tagService),
+      ],
     );
 
     const batchTransactionProcessor = new BatchTransactionProcessor(
@@ -472,7 +476,11 @@ describe('ActualAiService', () => {
         mockedLlmService,
         mockedPromptGenerator,
         tagService,
-        [ruleMatchStrategy, existingCategoryStrategy, new NewCategoryStrategy()],
+        [
+          ruleMatchStrategy,
+          existingCategoryStrategy,
+          new NewCategoryStrategy(dryRunApiService, tagService),
+        ],
       );
       const batchTransactionProcessor = new BatchTransactionProcessor(transactionProcessor, 20);
       dryRunTransactionService = new TransactionService(

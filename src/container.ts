@@ -147,7 +147,7 @@ const categorySuggester = new CategorySuggester(
   tagService,
 );
 
-const newCategoryStrategy = new NewCategoryStrategy();
+const newCategoryStrategy = new NewCategoryStrategy(actualApiService, tagService);
 
 const transactionProcessor = new TransactionProcessor(
   actualApiService,

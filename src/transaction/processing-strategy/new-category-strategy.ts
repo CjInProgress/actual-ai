@@ -1,9 +1,20 @@
 import { CategoryEntity, TransactionEntity } from '@actual-app/core/src/types/models';
 import type {
-  ProcessingStrategyI, UnifiedResponse,
+  ActualApiServiceI, ProcessingStrategyI, UnifiedResponse,
 } from '../../types';
+import { isFeatureEnabled } from '../../config';
+import TagService from '../tag-service';
 
 class NewCategoryStrategy implements ProcessingStrategyI {
+  private readonly actualApiService: ActualApiServiceI;
+
+  private readonly tagService: TagService;
+
+  constructor(actualApiService: ActualApiServiceI, tagService: TagService) {
+    this.actualApiService = actualApiService;
+    this.tagService = tagService;
+  }
+
   public isSatisfiedBy(response: UnifiedResponse): boolean {
     if (response.newCategory === undefined) {
       return false;
@@ -26,6 +37,16 @@ class NewCategoryStrategy implements ProcessingStrategyI {
     if (response.newCategory === undefined) {
       throw new Error('No newCategory in response');
     }
+    // Without suggestNewCategories nothing would ever act on the suggestion,
+    // and the untouched transaction went back to the model on every run.
+    if (!isFeatureEnabled('suggestNewCategories')) {
+      console.log(`No existing category fits; new category "${response.newCategory.name}" not enabled, marking as missed`);
+      await this.actualApiService.updateTransactionNotes(
+        transaction.id,
+        this.tagService.addNotGuessedTag(transaction.notes ?? ''),
+      );
+      return;
+    }
     const categoryKey = `${response.newCategory.groupName}:${response.newCategory.name}`;
 
     const existing = suggestedCategories.get(categoryKey);
@@ -37,7 +58,6 @@ class NewCategoryStrategy implements ProcessingStrategyI {
         transactions: [transaction],
       });
     }
-    return Promise.resolve();
   }
 }
 
