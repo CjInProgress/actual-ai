@@ -54,12 +54,17 @@ class TransactionProcessor {
     payeeHistory?: PayeeHistory,
   ): Promise<void> {
     try {
+      const history = payeeHistory?.lookup(transaction);
+      if (history?.length) {
+        // so a reviewer can tell an answer that followed past categories from one the model made up
+        console.log(`Payee history: ${history.map((h) => `${h.categoryName} x${h.count}`).join(', ')}`);
+      }
       const prompt = this.promptGenerator.generate(
         categoryGroups,
         transaction,
         payees,
         rules,
-        payeeHistory?.lookup(transaction),
+        history,
       );
 
       let response;

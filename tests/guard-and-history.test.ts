@@ -295,6 +295,7 @@ describe('history in the prompt', () => {
     llm.setUnifiedResponse({ type: 'existing', categoryId: GivenActualData.CATEGORY_GROCERIES });
     const promptGenerator = new MockedPromptGenerator();
     const generateSpy = jest.spyOn(promptGenerator, 'generate');
+    const log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     const history = new PayeeHistory([
       { ...transaction, id: 'old', category: GivenActualData.CATEGORY_GROCERIES },
     ], GivenActualData.createSampleCategories(), tagService);
@@ -312,6 +313,7 @@ describe('history in the prompt', () => {
       history,
     );
 
+    expect(log).toHaveBeenCalledWith('Payee history: Groceries x1');
     expect(generateSpy.mock.calls[0][4]).toEqual([
       { categoryId: GivenActualData.CATEGORY_GROCERIES, categoryName: 'Groceries', count: 1 },
     ]);
