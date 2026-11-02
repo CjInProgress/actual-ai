@@ -71,6 +71,12 @@ class TransactionFilterer {
 
     filteredTransactions = this.applyFilter(
       filteredTransactions,
+      (transaction) => !this.tagService.isSuggested(transaction.notes ?? ''),
+      'Has a suggestion waiting for approval',
+    );
+
+    filteredTransactions = this.applyFilter(
+      filteredTransactions,
       (transaction) => !transaction.is_parent,
       'Transaction is a parent',
     );

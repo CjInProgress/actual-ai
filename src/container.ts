@@ -1,6 +1,7 @@
 import * as actualApiClient from '@actual-app/api';
 import fs from 'fs';
 import ActualApiService from './actual-api-service';
+import SuggestOnlyActualApiService from './suggest-only-actual-api-service';
 import TransactionService from './transaction-service';
 import LlmModelFactory from './llm-model-factory';
 import {
@@ -23,6 +24,7 @@ import {
   llmTimeoutMs,
   llmTemperature,
   notGuessedTag,
+  suggestedTag,
   ollamaBaseURL,
   ollamaModel,
   openaiApiKey,
@@ -89,7 +91,9 @@ const llmModelFactory = new LlmModelFactory(
   groqBaseURL,
 );
 
-const actualApiService = new ActualApiService(
+const tagService = new TagService(notGuessedTag, guessedTag, suggestedTag);
+
+const realActualApiService = new ActualApiService(
   actualApiClient,
   fs,
   dataDir,
@@ -99,6 +103,19 @@ const actualApiService = new ActualApiService(
   e2ePassword,
   isDryRun,
 );
+
+const isSuggestOnly = isFeatureEnabled('suggestOnly');
+if (isSuggestOnly) {
+  if (isFeatureEnabled('suggestNewCategories')) {
+    throw new Error('suggestOnly cannot be combined with suggestNewCategories: it never creates categories');
+  }
+  tagService.assertSuggestedTagIsDistinct();
+  console.log(`=== SUGGEST ONLY MODE: guesses go into notes as "${suggestedTag} <category>"; no category is set ===`);
+}
+
+const actualApiService = isSuggestOnly
+  ? new SuggestOnlyActualApiService(realActualApiService, tagService)
+  : realActualApiService;
 
 const promptGenerator = new PromptGenerator(
   promptTemplate,
@@ -117,8 +134,6 @@ const llmService = new LlmService(
     tokensPerMinuteOverride,
   },
 );
-
-const tagService = new TagService(notGuessedTag, guessedTag);
 
 const ruleMatchStrategy = new RuleMatchStrategy(actualApiService, tagService);
 const existingCategoryStrategy = new ExistingCategoryStrategy(

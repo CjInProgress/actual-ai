@@ -43,6 +43,7 @@ export const dataDir = '/tmp/actual-ai/';
 export const promptTemplate = process.env.PROMPT_TEMPLATE ?? defaultPromptTemplate;
 export const notGuessedTag = process.env.NOT_GUESSED_TAG ?? '#actual-ai-miss';
 export const guessedTag = process.env.GUESSED_TAG ?? '#actual-ai';
+export const suggestedTag = process.env.SUGGESTED_TAG ?? '#ai-suggest';
 export const groqApiKey = process.env.GROQ_API_KEY ?? '';
 export const groqModel = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
 export const groqBaseURL = process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1';
@@ -106,6 +107,12 @@ function registerStandardFeatures() {
     enabled: enabledFeatures.includes('dryRun'),
     defaultValue: true,
     description: 'Run in dry mode without actually making changes',
+  };
+
+  features.suggestOnly = {
+    enabled: enabledFeatures.includes('suggestOnly'),
+    defaultValue: false,
+    description: 'Write the guessed category into the notes only; never set a category or create one',
   };
 
   features.rerunMissedTransactions = {

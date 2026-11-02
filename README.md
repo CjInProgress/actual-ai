@@ -236,3 +236,17 @@ Dry run messages will show:
 - Which rules would be applied
 - What new categories would be created
 - How many transactions would be affected by each change
+
+## Suggest-only Mode
+
+Add `suggestOnly` to `FEATURES` to review every guess before it counts. In this mode:
+- The category is **never set**: the guess goes into the notes as `#ai-suggest <category name>`
+  (for example `card 1234 #ai-suggest Groceries`, or `#ai-suggest Groceries (rule: Groceries rule)`).
+- To approve, filter transactions in Actual on notes containing `#ai-suggest Groceries`, select them and
+  set the category. Delete the tag to have a transaction guessed again.
+- A transaction with a suggestion is not sent to the model again, so reruns cost nothing.
+- Misses are still tagged `#actual-ai-miss`; no category or category group is ever created or changed.
+  `suggestOnly` refuses to start together with `suggestNewCategories`.
+- `SUGGESTED_TAG` (default `#ai-suggest`) must not share a prefix with `GUESSED_TAG` or `NOT_GUESSED_TAG`.
+
+It combines with `dryRun`, which then only logs the suggestions.

@@ -6,12 +6,27 @@ class TagService {
 
   private readonly guessedTag: string;
 
+  private readonly suggestedTag: string;
+
   constructor(
     notGuessedTag: string,
     guessedTag: string,
+    suggestedTag = '#ai-suggest',
   ) {
     this.notGuessedTag = notGuessedTag;
     this.guessedTag = guessedTag;
+    this.suggestedTag = suggestedTag;
+  }
+
+  // clearPreviousTags strips the other tags with prefix regexes, so a
+  // suggested tag that starts with one of them (or the reverse) would be
+  // half-eaten the same way "-miss" was.
+  public assertSuggestedTagIsDistinct(): void {
+    [this.notGuessedTag, this.guessedTag].forEach((tag) => {
+      if (this.suggestedTag.startsWith(tag) || tag.startsWith(this.suggestedTag)) {
+        throw new Error(`SUGGESTED_TAG "${this.suggestedTag}" must not share a prefix with "${tag}"`);
+      }
+    });
   }
 
   public addNotGuessedTag(notes: string): string {
@@ -46,6 +61,22 @@ class TagService {
 
   public isNotGuessed(notes: string): boolean {
     return notes.includes(this.notGuessedTag);
+  }
+
+  // Turns a guessed note ("… #actual-ai (rule: X)") into a suggestion
+  // ("… #ai-suggest Groceries (rule: X)"), so the category name can be
+  // filtered on in Actual and the guess approved there.
+  public toSuggestion(notes: string, categoryName: string): string {
+    const suggestion = `${this.suggestedTag} ${categoryName}`;
+    const index = notes.lastIndexOf(this.guessedTag);
+    if (index === -1) {
+      return `${notes} ${suggestion}`.trim();
+    }
+    return `${notes.slice(0, index)}${suggestion}${notes.slice(index + this.guessedTag.length)}`.trim();
+  }
+
+  public isSuggested(notes: string): boolean {
+    return notes.includes(this.suggestedTag);
   }
 }
 
